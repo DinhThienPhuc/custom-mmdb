@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -18,74 +20,82 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// List Facebook IPs
-	facebookCIDRs := []string{
-		"31.13.24.0/21",
-		"31.13.64.0/19",
-		"31.13.64.0/24",
-		"31.13.69.0/24",
-		"31.13.70.0/24",
-		"31.13.71.0/24",
-		"31.13.72.0/24",
-		"31.13.73.0/24",
-		"31.13.75.0/24",
-		"31.13.76.0/24",
-		"31.13.77.0/24",
-		"31.13.78.0/24",
-		"31.13.79.0/24",
-		"31.13.80.0/24",
-		"66.220.144.0/20",
-		"66.220.144.0/21",
-		"66.220.149.11/16",
-		"66.220.152.0/21",
-		"66.220.158.11/16",
-		"66.220.159.0/24",
-		"69.63.176.0/21",
-		"69.63.176.0/24",
-		"69.63.184.0/21",
-		"69.171.224.0/19",
-		"69.171.224.0/20",
-		"69.171.224.37/16",
-		"69.171.229.11/16",
-		"69.171.239.0/24",
-		"69.171.240.0/20",
-		"69.171.242.11/16",
-		"69.171.255.0/24",
-		"74.119.76.0/22",
-		"173.252.64.0/19",
-		"173.252.70.0/24",
-		"173.252.96.0/19",
-		"204.15.20.0/22",
+	// Define json file path
+	path := os.Args[1]
+
+	// Open our jsonFile
+	jsonFile, err := os.Open(path)
+	// if we os.Open returns an error then handle it
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Successfully openned json file!")
+	// defer the closing of our jsonFile so that we can parse it later on
+	defer jsonFile.Close()
+
+	// Names struct
+	type Names struct {
+		De string `json:"de"`
+		En string `json:"en"`
+		Es string `json:"es"`
+		Fr string `json:"fr"`
+		Ja string `json:"ja"`
+		Ru string `json:"ru"`
+		Cn string `json:"zh-CN"`
 	}
 
-	sreData := mmdbtype.Map{
-		"platform": mmdbtype.Map{
-			"geoname_id": mmdbtype.Uint32(7777777),
-			"iso_code":   mmdbtype.String("FC"),
-			"names": mmdbtype.Map{
-				"de":    mmdbtype.String("Fa'c'ebook"),
-				"en":    mmdbtype.String("Facebook"),
-				"es":    mmdbtype.String("Facebookee"),
-				"fr":    mmdbtype.String("Faceletbokuu"),
-				"ja":    mmdbtype.String("ベトナム"),
-				"ru":    mmdbtype.String("Вьетнам"),
-				"zh-CN": mmdbtype.String("越南"),
+	// Platform struct
+	type Platform struct {
+		Name      string   `json:"name"`
+		GeonameID int      `json:"geonameID"`
+		IsoCode   string   `json:"isoCode"`
+		Names     Names    `json:"names"`
+		Cidrs     []string `json:"cidrs"`
+	}
+
+	// read our opened jsonFile as a byte array.
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	// initialize array
+	var jsonData = []Platform{}
+
+	// we unmarshal our byteArray which contains our
+	// jsonFile's content into 'jsonData' which we defined above
+	json.Unmarshal(byteValue, &jsonData)
+
+	// we iterate through every platform within our platform array
+	for i := 0; i < len(jsonData); i++ {
+		fmt.Println("User Type: " + jsonData[i].Name)
+
+		sreData := mmdbtype.Map{
+			"platform": mmdbtype.Map{
+				"geoname_id": mmdbtype.Uint32(jsonData[i].GeonameID),
+				"iso_code":   mmdbtype.String(jsonData[i].IsoCode),
+				"names": mmdbtype.Map{
+					"de":    mmdbtype.String(jsonData[i].Names.De),
+					"en":    mmdbtype.String(jsonData[i].Names.En),
+					"es":    mmdbtype.String(jsonData[i].Names.Es),
+					"fr":    mmdbtype.String(jsonData[i].Names.Fr),
+					"ja":    mmdbtype.String(jsonData[i].Names.Ja),
+					"ru":    mmdbtype.String(jsonData[i].Names.Ru),
+					"zh-CN": mmdbtype.String(jsonData[i].Names.Cn),
+				},
 			},
-		},
-	}
-
-	for _, cidr := range facebookCIDRs {
-		// Define and insert the new data.
-		_, sreNet, err := net.ParseCIDR(cidr)
-		if err != nil {
-			log.Fatal(err)
 		}
 
-		if err := writer.InsertFunc(sreNet, inserter.TopLevelMergeWith(sreData)); err != nil {
-			log.Fatal(err)
-		}
+		for _, cidr := range jsonData[i].Cidrs {
+			// Define and insert the new data.
+			_, sreNet, err := net.ParseCIDR(cidr)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		fmt.Println("Success: ", cidr)
+			if err := writer.InsertFunc(sreNet, inserter.TopLevelMergeWith(sreData)); err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println(jsonData[i].Name, ": ", cidr)
+		}
 	}
 
 	// Write the newly enriched DB to the filesystem.
