@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Successfully openned json file!")
+	fmt.Println("Successfully opened json file!")
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 
@@ -47,7 +47,7 @@ func main() {
 	// Platform struct
 	type Platform struct {
 		Name      string   `json:"name"`
-		GeonameID int      `json:"geonameID"`
+		GeoNameID int      `json:"geoNameId"`
 		IsoCode   string   `json:"isoCode"`
 		Names     Names    `json:"names"`
 		Cidrs     []string `json:"cidrs"`
@@ -69,7 +69,7 @@ func main() {
 
 		sreData := mmdbtype.Map{
 			"platform": mmdbtype.Map{
-				"geoname_id": mmdbtype.Uint32(jsonData[i].GeonameID),
+				"geoname_id": mmdbtype.Uint32(jsonData[i].GeoNameID),
 				"iso_code":   mmdbtype.String(jsonData[i].IsoCode),
 				"names": mmdbtype.Map{
 					"de":    mmdbtype.String(jsonData[i].Names.De),

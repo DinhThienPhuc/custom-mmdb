@@ -1,7 +1,7 @@
 [
   {
     "name": "Facebook",
-    "geonameID": 7777777,
+    "geoNameId": 7777777,
     "isoCode": "FC",
     "names": {
       "de": "Fa'c'ebook",
@@ -53,7 +53,7 @@
   },
   {
     "name": "Google",
-    "geonameID": 8888888,
+    "geoNameId": 8888888,
     "isoCode": "GG",
     "names": {
       "de": "Guuglo'e",
